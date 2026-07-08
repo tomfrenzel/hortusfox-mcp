@@ -18,7 +18,12 @@ export const tasksTools: ToolDef[] = [
         .describe('If true, include done/completed tasks. Default false.'),
       limit: z.number().int().optional().describe('Maximum tasks to return (default 100).'),
     },
-    handler: (client, args) => client.request('tasks/fetch', { done: args.done, limit: args.limit }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {};
+      if (args.done !== undefined) params.done = args.done;
+      if (args.limit !== undefined) params.limit = args.limit;
+      return client.request('tasks/fetch', params);
+    },
   }),
 
   defineTool({

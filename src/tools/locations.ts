@@ -32,14 +32,15 @@ export const locationsTools: ToolDef[] = [
         .describe('Optional pagination page/cursor.'),
       limit: z.number().int().optional().describe('Maximum locations to return.'),
     },
-    handler: (client, args) =>
-      client.request('locations/list', {
-        only_active: args.only_active,
-        include_plants: args.include_plants,
-        include_info: args.include_info,
-        paginate: args.paginate,
-        limit: args.limit,
-      }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {};
+      if (args.only_active !== undefined) params.only_active = args.only_active;
+      if (args.include_plants !== undefined) params.include_plants = args.include_plants;
+      if (args.include_info !== undefined) params.include_info = args.include_info;
+      if (args.paginate !== undefined) params.paginate = args.paginate;
+      if (args.limit !== undefined) params.limit = args.limit;
+      return client.request('locations/list', params);
+    },
   }),
 
   defineTool({
@@ -54,10 +55,12 @@ export const locationsTools: ToolDef[] = [
         .optional()
         .describe('If true, include the full list of plants at this location. Default false.'),
     },
-    handler: (client, args) =>
-      client.request('locations/info', {
+    handler: (client, args) => {
+      const params: Record<string, any> = {
         location: args.location,
-        include_plants: args.include_plants,
-      }),
+      };
+      if (args.include_plants !== undefined) params.include_plants = args.include_plants;
+      return client.request('locations/info', params);
+    },
   }),
 ];

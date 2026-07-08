@@ -13,7 +13,11 @@ export const chatTools: ToolDef[] = [
     inputSchema: {
       limit: z.number().int().optional().describe('Maximum messages to return (default 50).'),
     },
-    handler: (client, args) => client.request('chat/fetch', { limit: args.limit }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {};
+      if (args.limit !== undefined) params.limit = args.limit;
+      return client.request('chat/fetch', params);
+    },
   }),
 
   defineTool({

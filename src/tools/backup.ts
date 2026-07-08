@@ -21,15 +21,16 @@ export const backupTools: ToolDef[] = [
     description:
       'Export a backup archive for the selected data categories. Returns a downloadable file URL. Endpoint: /api/backup/export.',
     inputSchema: categoryShape,
-    handler: (client, args) =>
-      client.request('backup/export', {
-        locations: args.locations,
-        plants: args.plants,
-        gallery: args.gallery,
-        tasks: args.tasks,
-        inventory: args.inventory,
-        calendar: args.calendar,
-      }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {};
+      if (args.locations !== undefined) params.locations = args.locations;
+      if (args.plants !== undefined) params.plants = args.plants;
+      if (args.gallery !== undefined) params.gallery = args.gallery;
+      if (args.tasks !== undefined) params.tasks = args.tasks;
+      if (args.inventory !== undefined) params.inventory = args.inventory;
+      if (args.calendar !== undefined) params.calendar = args.calendar;
+      return client.request('backup/export', params);
+    },
   }),
 
   defineTool({
@@ -38,14 +39,15 @@ export const backupTools: ToolDef[] = [
     description:
       'Import previously staged backup data for the selected categories. Endpoint: /api/backup/import.',
     inputSchema: categoryShape,
-    handler: (client, args) =>
-      client.request('backup/import', {
-        locations: args.locations,
-        plants: args.plants,
-        gallery: args.gallery,
-        tasks: args.tasks,
-        inventory: args.inventory,
-        calendar: args.calendar,
-      }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {};
+      if (args.locations !== undefined) params.locations = args.locations;
+      if (args.plants !== undefined) params.plants = args.plants;
+      if (args.gallery !== undefined) params.gallery = args.gallery;
+      if (args.tasks !== undefined) params.tasks = args.tasks;
+      if (args.inventory !== undefined) params.inventory = args.inventory;
+      if (args.calendar !== undefined) params.calendar = args.calendar;
+      return client.request('backup/import', params);
+    },
   }),
 ];

@@ -83,13 +83,14 @@ export const plantsTools: ToolDef[] = [
         .optional()
         .describe('Optional sort specifier (column/direction) as accepted by HortusFox.'),
     },
-    handler: (client, args) =>
-      client.request('plants/list', {
-        location: args.location,
-        limit: args.limit,
-        from: args.from,
-        sort: args.sort,
-      }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {};
+      if (args.location !== undefined) params.location = args.location;
+      if (args.limit !== undefined) params.limit = args.limit;
+      if (args.from !== undefined) params.from = args.from;
+      if (args.sort !== undefined) params.sort = args.sort;
+      return client.request('plants/list', params);
+    },
   }),
 
   defineTool({
@@ -105,8 +106,13 @@ export const plantsTools: ToolDef[] = [
         .optional()
         .describe('Optional result limit hint.'),
     },
-    handler: (client, args) =>
-      client.request('plants/search', { expression: args.expression, limit: args.limit }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {
+        expression: args.expression,
+      };
+      if (args.limit !== undefined) params.limit = args.limit;
+      return client.request('plants/search', params);
+    },
   }),
 
   defineTool({
@@ -188,13 +194,15 @@ export const plantsTools: ToolDef[] = [
         .optional()
         .describe('If true, move the existing main photo into the plant gallery before replacing.'),
     },
-    handler: (client, args) =>
-      client.request('plants/photo/update', {
+    handler: (client, args) => {
+      const params: Record<string, any> = {
         plant: args.plant,
-        external: args.external,
-        photo: args.photo,
-        move_to_gallery: args.move_to_gallery,
-      }),
+      };
+      if (args.external !== undefined) params.external = args.external;
+      if (args.photo !== undefined) params.photo = args.photo;
+      if (args.move_to_gallery !== undefined) params.move_to_gallery = args.move_to_gallery;
+      return client.request('plants/photo/update', params);
+    },
   }),
 
   defineTool({
@@ -225,13 +233,15 @@ export const plantsTools: ToolDef[] = [
         .optional()
         .describe('External photo URL (required when external=true).'),
     },
-    handler: (client, args) =>
-      client.request('plants/gallery/add', {
+    handler: (client, args) => {
+      const params: Record<string, any> = {
         plant: args.plant,
-        label: args.label,
-        external: args.external,
-        photo: args.photo,
-      }),
+      };
+      if (args.label !== undefined) params.label = args.label;
+      if (args.external !== undefined) params.external = args.external;
+      if (args.photo !== undefined) params.photo = args.photo;
+      return client.request('plants/gallery/add', params);
+    },
   }),
 
   defineTool({

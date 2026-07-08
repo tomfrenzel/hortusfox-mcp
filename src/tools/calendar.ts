@@ -21,11 +21,12 @@ export const calendarTools: ToolDef[] = [
         .optional()
         .describe('End date (YYYY-MM-DD). Defaults to 30 days from today.'),
     },
-    handler: (client, args) =>
-      client.request('calendar/fetch', {
-        date_from: args.date_from,
-        date_till: args.date_till,
-      }),
+    handler: (client, args) => {
+      const params: Record<string, any> = {};
+      if (args.date_from !== undefined) params.date_from = args.date_from;
+      if (args.date_till !== undefined) params.date_till = args.date_till;
+      return client.request('calendar/fetch', params);
+    },
   }),
 
   defineTool({
@@ -45,13 +46,15 @@ export const calendarTools: ToolDef[] = [
         .optional()
         .describe('Optional calendar class identifier.'),
     },
-    handler: (client, args) =>
-      client.request('calendar/add', {
+    handler: (client, args) => {
+      const params: Record<string, any> = {
         name: args.name,
         date_from: args.date_from,
-        date_till: args.date_till,
-        class: args.class,
-      }),
+      };
+      if (args.date_till !== undefined) params.date_till = args.date_till;
+      if (args.class !== undefined) params.class = args.class;
+      return client.request('calendar/add', params);
+    },
   }),
 
   defineTool({
@@ -71,14 +74,16 @@ export const calendarTools: ToolDef[] = [
         .optional()
         .describe('Optional calendar class identifier.'),
     },
-    handler: (client, args) =>
-      client.request('calendar/edit', {
+    handler: (client, args) => {
+      const params: Record<string, any> = {
         ident: args.ident,
-        name: args.name,
         date_from: args.date_from,
-        date_till: args.date_till,
-        class: args.class,
-      }),
+      };
+      if (args.name !== undefined) params.name = args.name;
+      if (args.date_till !== undefined) params.date_till = args.date_till;
+      if (args.class !== undefined) params.class = args.class;
+      return client.request('calendar/edit', params);
+    },
   }),
 
   defineTool({

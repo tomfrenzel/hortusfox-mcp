@@ -37,16 +37,18 @@ export const inventoryTools: ToolDef[] = [
         .describe('Optional inventory group ID.'),
       photo: z.string().optional().describe('Optional photo URL.'),
     },
-    handler: (client, args) =>
-      client.request('inventory/add', {
+    handler: (client, args) => {
+      const params: Record<string, any> = {
         name: args.name,
-        description: args.description,
-        tags: args.tags,
-        location: args.location,
-        amount: args.amount,
-        group: args.group,
-        photo: args.photo,
-      }),
+      };
+      if (args.description !== undefined) params.description = args.description;
+      if (args.tags !== undefined) params.tags = args.tags;
+      if (args.location !== undefined) params.location = args.location;
+      if (args.amount !== undefined) params.amount = args.amount;
+      if (args.group !== undefined) params.group = args.group;
+      if (args.photo !== undefined) params.photo = args.photo;
+      return client.request('inventory/add', params);
+    },
   }),
 
   defineTool({
@@ -63,17 +65,19 @@ export const inventoryTools: ToolDef[] = [
       group: z.union([z.string(), z.number()]).optional().describe('Updated inventory group ID.'),
       photo: z.string().optional().describe('Updated photo URL.'),
     },
-    handler: (client, args) =>
-      client.request('inventory/edit', {
+    handler: (client, args) => {
+      const params: Record<string, any> = {
         item: args.item,
-        name: args.name,
-        description: args.description,
-        tags: args.tags,
-        location: args.location,
-        amount: args.amount,
-        group: args.group,
-        photo: args.photo,
-      }),
+      };
+      if (args.name !== undefined) params.name = args.name;
+      if (args.description !== undefined) params.description = args.description;
+      if (args.tags !== undefined) params.tags = args.tags;
+      if (args.location !== undefined) params.location = args.location;
+      if (args.amount !== undefined) params.amount = args.amount;
+      if (args.group !== undefined) params.group = args.group;
+      if (args.photo !== undefined) params.photo = args.photo;
+      return client.request('inventory/edit', params);
+    },
   }),
 
   defineTool({

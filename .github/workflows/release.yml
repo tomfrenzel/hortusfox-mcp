@@ -1,9 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -13,13 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # required for OIDC trusted publishing (and provenance)
+      id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
@@ -37,23 +38,32 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Verify tag matches package.json version
+      - name: Verify release tag matches package.json version
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
           PKG_VERSION="$(node -p "require('./package.json').version")"
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="${TAG_NAME#v}"
           if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION"
+            echo "::error::Release tag $TAG_NAME does not match package.json version $PKG_VERSION"
             exit 1
           fi
 
       - name: Determine npm dist-tag
         id: disttag
+        env:
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
           VERSION="$(node -p "require('./package.json').version")"
-          if [[ "$VERSION" == *-* ]]; then
-            # Pre-release (e.g. 1.2.0-beta.1): publish under its identifier
-            # (beta/alpha/rc/...) so it never becomes the default `latest`.
-            PREID="$(echo "${VERSION#*-}" | cut -d. -f1)"
+          if [[ "$VERSION" == *-* || "$IS_PRERELEASE" == "true" ]]; then
+            # Pre-release: publish under a non-default dist-tag so it never becomes
+            # the `latest` that plain `npm install` resolves to.
+            if [[ "$VERSION" == *-* ]]; then
+              # Derive the identifier from the version (e.g. 1.2.0-beta.1 -> beta).
+              PREID="$(echo "${VERSION#*-}" | cut -d. -f1)"
+            else
+              PREID="next"
+            fi
             if ! echo "$PREID" | grep -Eq '^[a-zA-Z][a-zA-Z0-9-]*$'; then
               PREID="next"
             fi
@@ -64,6 +74,4 @@ jobs:
           echo "Publishing $VERSION under dist-tag: $(tail -n1 "$GITHUB_OUTPUT")"
 
       - name: Publish to npm
-        # Auth is via OIDC trusted publishing (no NPM_TOKEN needed).
-        # Provenance is generated automatically for trusted publishing.
         run: npm publish --access public --tag "${{ steps.disttag.outputs.tag }}"

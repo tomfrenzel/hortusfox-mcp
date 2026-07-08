@@ -26,7 +26,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: npm
 
-      - name: Update npm (OIDC trusted publishing needs npm >= 11.5.1)
+      - name: Update npm
         run: npm install -g npm@latest
 
       - name: Install dependencies
@@ -56,10 +56,7 @@ jobs:
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           if [[ "$VERSION" == *-* || "$IS_PRERELEASE" == "true" ]]; then
-            # Pre-release: publish under a non-default dist-tag so it never becomes
-            # the `latest` that plain `npm install` resolves to.
             if [[ "$VERSION" == *-* ]]; then
-              # Derive the identifier from the version (e.g. 1.2.0-beta.1 -> beta).
               PREID="$(echo "${VERSION#*-}" | cut -d. -f1)"
             else
               PREID="next"

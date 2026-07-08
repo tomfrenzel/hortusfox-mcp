@@ -63,10 +63,37 @@ node dist/index.js
 The server speaks MCP over **stdio**. Diagnostic messages are written to `stderr`; the
 JSON-RPC protocol uses `stdout`.
 
+### Run with npx
+
+Once published to npm, the server can be run without a local checkout:
+
+```bash
+HORTUSFOX_URL=https://garden.example.com \
+HORTUSFOX_API_TOKEN=your-token \
+npx hortusfox-mcp
+```
+
 ### Register with an MCP client
 
-Add the server to your client's MCP configuration. For example, in a
-`mcp.json` / client config:
+Add the server to your client's MCP configuration. The recommended way is via
+`npx`:
+
+```json
+{
+  "mcpServers": {
+    "hortusfox": {
+      "command": "npx",
+      "args": ["-y", "hortusfox-mcp"],
+      "env": {
+        "HORTUSFOX_URL": "https://garden.example.com",
+        "HORTUSFOX_API_TOKEN": "your-token"
+      }
+    }
+  }
+}
+```
+
+Alternatively, point at a local build:
 
 ```json
 {
@@ -175,6 +202,27 @@ npm run dev        # tsc --watch
 npm run typecheck  # type-check without emitting
 npm run build      # compile to dist/
 ```
+
+A [dev container](https://containers.dev) config is provided in
+[`.devcontainer/`](./.devcontainer) for a ready-to-use Node.js + TypeScript
+environment.
+
+## Releasing
+
+Releases are published to npm automatically by the
+[`Release`](./.github/workflows/release.yml) GitHub Actions workflow whenever a
+`v*` tag is pushed. The workflow type-checks, builds, verifies the tag matches
+the `package.json` version, and publishes with
+[npm provenance](https://docs.npmjs.com/generating-provenance-statements).
+
+To cut a release:
+
+```bash
+npm version patch   # or minor / major — bumps package.json and creates a tag
+git push --follow-tags
+```
+
+This requires an `NPM_TOKEN` secret to be configured in the repository settings.
 
 ## How it works
 

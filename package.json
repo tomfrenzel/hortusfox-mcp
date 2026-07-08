@@ -1,6 +1,6 @@
 {
   "name": "@tomfrenzel/hortusfox-mcp",
-  "version": "1.0.1-beta.1",
+  "version": "1.0.1",
   "description": "Model Context Protocol (stdio) server for HortusFox-web, wrapping its REST API.",
   "repository": {
     "type": "git",

@@ -1,7 +1,15 @@
 {
   "name": "@tomfrenzel/hortusfox-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Model Context Protocol (stdio) server for HortusFox-web, wrapping its REST API.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomfrenzel/hortusfox-mcp.git"
+  },
+  "homepage": "https://github.com/tomfrenzel/hortusfox-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/tomfrenzel/hortusfox-mcp/issues"
+  },
   "type": "module",
   "bin": {
     "hortusfox-mcp": "dist/index.js"

@@ -1,5 +1,5 @@
 {
-  "name": "hortusfox-mcp",
+  "name": "@tomfrenzel/hortusfox-mcp",
   "version": "1.0.0",
   "description": "Model Context Protocol (stdio) server for HortusFox-web, wrapping its REST API.",
   "type": "module",

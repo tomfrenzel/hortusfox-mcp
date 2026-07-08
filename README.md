@@ -70,7 +70,7 @@ Once published to npm, the server can be run without a local checkout:
 ```bash
 HORTUSFOX_URL=https://garden.example.com \
 HORTUSFOX_API_TOKEN=your-token \
-npx hortusfox-mcp
+npx @tomfrenzel/hortusfox-mcp
 ```
 
 ### Register with an MCP client
@@ -83,7 +83,7 @@ Add the server to your client's MCP configuration. The recommended way is via
   "mcpServers": {
     "hortusfox": {
       "command": "npx",
-      "args": ["-y", "hortusfox-mcp"],
+      "args": ["-y", "@tomfrenzel/hortusfox-mcp"],
       "env": {
         "HORTUSFOX_URL": "https://garden.example.com",
         "HORTUSFOX_API_TOKEN": "your-token"

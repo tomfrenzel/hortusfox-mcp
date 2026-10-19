@@ -1,3 +1,5 @@
+import { readFile, realpath, stat } from 'node:fs/promises';
+import { basename, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { HortusFoxConfig } from './config.js';
 
@@ -53,17 +55,108 @@ export class HortusFoxClient {
    * HortusFoxError describing the failure.
    */
   async request(endpoint: string, params: Params = {}): Promise<HortusFoxResponse> {
-    const normalized = endpoint.replace(/^\/+/, '');
-    const url = `${this.config.baseUrl}/api/${normalized}`;
-
     const body = new URLSearchParams();
     body.set('token', this.config.token);
     for (const [key, value] of Object.entries(params)) {
       if (value === undefined || value === null) {
         continue;
       }
-      body.set(key, typeof value === 'boolean' ? (value ? '1' : '0') : String(value));
+      body.set(key, encodeValue(value));
     }
+
+    return this.send(endpoint, () => ({
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+      },
+      body: body.toString(),
+    }));
+  }
+
+  /**
+   * Upload a local file as `multipart/form-data`, under the form field the
+   * endpoint reads from `$_FILES` (e.g. `attachment` or `photo`), alongside the
+   * token and the other parameters.
+   *
+   * Only files inside HORTUSFOX_UPLOAD_DIR may be sent. The path is resolved
+   * with realpath first, so neither `..` nor a symlink can reach outside it:
+   * an agent must not be able to ship ~/.ssh or a .env to the server.
+   */
+  async requestMultipart(
+    endpoint: string,
+    params: Params,
+    file: { field: string; path: string }
+  ): Promise<HortusFoxResponse> {
+    const resolved = await this.resolveUpload(endpoint, file.path);
+    const data = await readFile(resolved);
+
+    return this.send(endpoint, () => {
+      // Rebuilt per attempt: a FormData body is consumed by fetch.
+      const form = new FormData();
+      form.set('token', this.config.token);
+      for (const [key, value] of Object.entries(params)) {
+        if (value === undefined || value === null) {
+          continue;
+        }
+        form.set(key, encodeValue(value));
+      }
+      form.set(file.field, new Blob([data]), basename(resolved));
+      return { headers: { Accept: 'application/json' }, body: form };
+    });
+  }
+
+  private async resolveUpload(endpoint: string, path: string): Promise<string> {
+    const dir = this.config.uploadDir;
+    if (!dir) {
+      throw new HortusFoxError(
+        'Uploads are disabled: set HORTUSFOX_UPLOAD_DIR to the directory files may be sent from.',
+        endpoint
+      );
+    }
+
+    let root: string;
+    let target: string;
+    try {
+      root = await realpath(dir);
+      target = await realpath(path);
+    } catch (err) {
+      throw new HortusFoxError(
+        `Cannot resolve upload path: ${err instanceof Error ? err.message : String(err)}`,
+        endpoint
+      );
+    }
+
+    if (!target.startsWith(root + sep)) {
+      throw new HortusFoxError(
+        `Refusing to upload ${path}: it is not inside HORTUSFOX_UPLOAD_DIR.`,
+        endpoint
+      );
+    }
+
+    const info = await stat(target);
+    if (!info.isFile()) {
+      throw new HortusFoxError(`Refusing to upload ${path}: not a regular file.`, endpoint);
+    }
+    if (info.size > this.config.maxUploadBytes) {
+      throw new HortusFoxError(
+        `Refusing to upload ${path}: ${info.size} bytes exceeds the ${this.config.maxUploadBytes}-byte ceiling (HORTUSFOX_MAX_UPLOAD_MB).`,
+        endpoint
+      );
+    }
+
+    return target;
+  }
+
+  /**
+   * POST to an API endpoint (path relative to `/api`) and interpret the
+   * HortusFox response. `buildInit` is called once per attempt.
+   */
+  private async send(
+    endpoint: string,
+    buildInit: () => { headers: Record<string, string>; body: string | FormData }
+  ): Promise<HortusFoxResponse> {
+    const normalized = endpoint.replace(/^\/+/, '');
+    const url = `${this.config.baseUrl}/api/${normalized}`;
 
     const maxAttempts = 3;
     let lastError: unknown;
@@ -75,11 +168,7 @@ export class HortusFoxClient {
       try {
         const res = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Accept: 'application/json',
-          },
-          body: body.toString(),
+          ...buildInit(),
           signal: controller.signal,
         });
 
@@ -158,6 +247,10 @@ export class HortusFoxClient {
       ? lastError
       : new HortusFoxError('Unknown request failure', endpoint);
   }
+}
+
+function encodeValue(value: string | number | boolean): string {
+  return typeof value === 'boolean' ? (value ? '1' : '0') : String(value);
 }
 
 function safeParse(text: string): unknown {

@@ -11,11 +11,11 @@ Written in TypeScript for Node.js, using the official
 
 ## Features
 
-Every endpoint of the HortusFox `ApiController` is covered — **38 tools** across 7 domains:
+Every endpoint of the HortusFox `ApiController` is covered — **42 tools** across 7 domains:
 
 | Domain | Tools |
 | --- | --- |
-| **Plants** (18) | get, add, update, remove, list, search; custom attributes add/edit/remove; main photo update; gallery list/add/edit/remove; log add/edit/remove/fetch |
+| **Plants** (22) | get, add, update, remove, list, search; custom attributes add/edit/remove; main photo update; gallery list/add/edit/remove; attachments fetch/add/edit/remove; log add/edit/remove/fetch |
 | **Locations** (2) | list, get info |
 | **Tasks** (4) | fetch, add, edit, remove |
 | **Inventory** (6) | fetch, add, edit, increment, decrement, remove |
@@ -47,6 +47,8 @@ The server is configured entirely through environment variables:
 | `HORTUSFOX_URL` | ✅ | Base URL of your HortusFox instance, e.g. `https://garden.example.com` |
 | `HORTUSFOX_API_TOKEN` | ✅ | API key created in the HortusFox admin panel |
 | `HORTUSFOX_TIMEOUT` | ❌ | Request timeout in milliseconds (default `30000`) |
+| `HORTUSFOX_UPLOAD_DIR` | ❌ | Directory local files may be uploaded from. Unset, every upload is refused |
+| `HORTUSFOX_MAX_UPLOAD_MB` | ❌ | Upload size ceiling in MiB (default `25`) |
 
 See [.env.example](./.env.example).
 
@@ -132,18 +134,26 @@ returned as MCP tool errors with a descriptive message.
 | `hortusfox_add_plant_attribute` | `plants/attributes/add` | `plant`, `label`, `datatype`, `content` |
 | `hortusfox_edit_plant_attribute` | `plants/attributes/edit` | `plant`, `label`, `datatype`, `content` |
 | `hortusfox_remove_plant_attribute` | `plants/attributes/remove` | `plant`, `label` |
-| `hortusfox_update_plant_photo` | `plants/photo/update` | `plant`, `external?`, `photo?`, `move_to_gallery?` |
+| `hortusfox_update_plant_photo` | `plants/photo/update` | `plant`, `path?` or (`external?`, `photo?`), `move_to_gallery?` |
 | `hortusfox_list_plant_gallery` | `plants/gallery/list` | `plant` |
-| `hortusfox_add_plant_gallery_photo` | `plants/gallery/add` | `plant`, `label?`, `external?`, `photo?` |
+| `hortusfox_add_plant_gallery_photo` | `plants/gallery/add` | `plant`, `label?`, `path?` or (`external?`, `photo?`) |
 | `hortusfox_edit_plant_gallery_photo` | `plants/gallery/edit` | `plant`, `item`, `label` |
 | `hortusfox_remove_plant_gallery_photo` | `plants/gallery/remove` | `item` |
+| `hortusfox_fetch_plant_attachments` | `plants/attachments/fetch` | `plant`, `paginate?` |
+| `hortusfox_add_plant_attachment` | `plants/attachments/add` | `plant`, `label`, `path` |
+| `hortusfox_edit_plant_attachment` | `plants/attachments/edit` | `item`, `label` |
+| `hortusfox_remove_plant_attachment` | `plants/attachments/remove` | `item` |
 | `hortusfox_add_plant_log_entry` | `plants/log/add` | `plant`, `content` |
 | `hortusfox_edit_plant_log_entry` | `plants/log/edit` | `logid`, `content` |
 | `hortusfox_remove_plant_log_entry` | `plants/log/remove` | `logid` |
 | `hortusfox_fetch_plant_log` | `plants/log/fetch` | `plant`, `paginate?`, `limit?` |
 
-> **Photos:** the API-based photo tools support **external image URLs** (`external: true`
-> with a `photo` URL). Direct binary file uploads are not exposed over the token API.
+> **Photos and attachments:** the photo tools accept either an **external image URL**
+> (`external: true` with a `photo` URL) or a local file (`path`), sent as
+> `multipart/form-data`. Attachments are always local files. Local uploads are only
+> allowed from `HORTUSFOX_UPLOAD_DIR`: the path is resolved with `realpath` first, so
+> neither `..` nor a symlink can reach outside it, and files above
+> `HORTUSFOX_MAX_UPLOAD_MB` are refused before being read.
 
 ### Locations
 

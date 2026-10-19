@@ -172,7 +172,7 @@ export const plantsTools: ToolDef[] = [
     name: 'hortusfox_update_plant_photo',
     title: 'Update plant main photo',
     description:
-      'Update the main preview photo of a plant. Set external=true and provide a photo URL to use an external image. Optionally move the current photo into the gallery first. Endpoint: /api/plants/photo/update.',
+      'Update the main preview photo of a plant. Either provide `path` to upload a local image file (must be inside HORTUSFOX_UPLOAD_DIR), or set external=true and provide a photo URL. Optionally move the current photo into the gallery first. Endpoint: /api/plants/photo/update.',
     inputSchema: {
       plant: z.union([z.string(), z.number()]).describe('The plant ID.'),
       external: z
@@ -183,18 +183,26 @@ export const plantsTools: ToolDef[] = [
         .string()
         .optional()
         .describe('External photo URL (required when external=true).'),
+      path: z
+        .string()
+        .optional()
+        .describe('Local image file to upload instead of an external URL. Must be inside HORTUSFOX_UPLOAD_DIR.'),
       move_to_gallery: z
         .boolean()
         .optional()
         .describe('If true, move the existing main photo into the plant gallery before replacing.'),
     },
-    handler: (client, args) =>
-      client.request('plants/photo/update', {
+    handler: (client, args) => {
+      const params = {
         plant: args.plant,
-        external: args.external,
-        photo: args.photo,
+        external: args.path ? false : args.external,
+        photo: args.path ? undefined : args.photo,
         move_to_gallery: args.move_to_gallery,
-      }),
+      };
+      return args.path
+        ? client.requestMultipart('plants/photo/update', params, { field: 'photo', path: args.path })
+        : client.request('plants/photo/update', params);
+    },
   }),
 
   defineTool({
@@ -212,7 +220,7 @@ export const plantsTools: ToolDef[] = [
     name: 'hortusfox_add_plant_gallery_photo',
     title: 'Add plant gallery photo',
     description:
-      'Add a photo to a plant gallery. Set external=true and provide a photo URL to add an external image. Endpoint: /api/plants/gallery/add.',
+      'Add a photo to a plant gallery. Either provide `path` to upload a local image file (must be inside HORTUSFOX_UPLOAD_DIR), or set external=true and provide a photo URL. Endpoint: /api/plants/gallery/add.',
     inputSchema: {
       plant: z.union([z.string(), z.number()]).describe('The plant ID.'),
       label: z.string().optional().describe('Optional label/caption for the photo.'),
@@ -224,14 +232,22 @@ export const plantsTools: ToolDef[] = [
         .string()
         .optional()
         .describe('External photo URL (required when external=true).'),
+      path: z
+        .string()
+        .optional()
+        .describe('Local image file to upload instead of an external URL. Must be inside HORTUSFOX_UPLOAD_DIR.'),
     },
-    handler: (client, args) =>
-      client.request('plants/gallery/add', {
+    handler: (client, args) => {
+      const params = {
         plant: args.plant,
         label: args.label,
-        external: args.external,
-        photo: args.photo,
-      }),
+        external: args.path ? false : args.external,
+        photo: args.path ? undefined : args.photo,
+      };
+      return args.path
+        ? client.requestMultipart('plants/gallery/add', params, { field: 'photo', path: args.path })
+        : client.request('plants/gallery/add', params);
+    },
   }),
 
   defineTool({
@@ -261,6 +277,62 @@ export const plantsTools: ToolDef[] = [
       item: z.union([z.string(), z.number()]).describe('The gallery photo item ID to remove.'),
     },
     handler: (client, args) => client.request('plants/gallery/remove', { item: args.item }),
+  }),
+
+  defineTool({
+    name: 'hortusfox_fetch_plant_attachments',
+    title: 'Fetch plant attachments',
+    description:
+      'List the file attachments of a plant, with optional pagination. Endpoint: /api/plants/attachments/fetch.',
+    inputSchema: {
+      plant: z.union([z.string(), z.number()]).describe('The plant ID.'),
+      paginate: z
+        .union([z.string(), z.number()])
+        .optional()
+        .describe('Optional pagination cursor: the last attachment ID of the previous page.'),
+    },
+    handler: (client, args) =>
+      client.request('plants/attachments/fetch', { plant: args.plant, paginate: args.paginate }),
+  }),
+
+  defineTool({
+    name: 'hortusfox_add_plant_attachment',
+    title: 'Add plant attachment',
+    description:
+      'Upload a local file as an attachment of a plant. The file must be inside HORTUSFOX_UPLOAD_DIR. Returns the new attachment ID. Endpoint: /api/plants/attachments/add.',
+    inputSchema: {
+      plant: z.union([z.string(), z.number()]).describe('The plant ID.'),
+      label: z.string().describe('Label shown for the attachment.'),
+      path: z.string().describe('Local file to upload. Must be inside HORTUSFOX_UPLOAD_DIR.'),
+    },
+    handler: (client, args) =>
+      client.requestMultipart(
+        'plants/attachments/add',
+        { plant: args.plant, label: args.label },
+        { field: 'attachment', path: args.path }
+      ),
+  }),
+
+  defineTool({
+    name: 'hortusfox_edit_plant_attachment',
+    title: 'Edit plant attachment label',
+    description: 'Change the label of an attachment by its ID. Endpoint: /api/plants/attachments/edit.',
+    inputSchema: {
+      item: z.union([z.string(), z.number()]).describe('The attachment ID.'),
+      label: z.string().describe('The new label.'),
+    },
+    handler: (client, args) =>
+      client.request('plants/attachments/edit', { item: args.item, label: args.label }),
+  }),
+
+  defineTool({
+    name: 'hortusfox_remove_plant_attachment',
+    title: 'Remove plant attachment',
+    description: 'Delete an attachment by its ID. Endpoint: /api/plants/attachments/remove.',
+    inputSchema: {
+      item: z.union([z.string(), z.number()]).describe('The attachment ID to remove.'),
+    },
+    handler: (client, args) => client.request('plants/attachments/remove', { item: args.item }),
   }),
 
   defineTool({
